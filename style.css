@@ -7,28 +7,38 @@
   --text: #1C1C1E;
   --text-secondary: #6E6E73;
   --separator: rgba(60,60,67,0.13);
-  --accent: #007AFF;
+  --accent: #5B5FEF;
+  --accent-rgb: 91,95,239;
   --accent-2: #34C759;
+  --teal: #00BFA6;
+  --teal-rgb: 0,191,166;
+  --amber: #FF9F0A;
+  --amber-rgb: 255,159,10;
   --danger: #FF3B30;
   --card-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 6px 20px rgba(0,0,0,0.05);
   --radius: 20px;
   --tabbar-h: 56px;
-  --tabbar-total: calc(var(--tabbar-h) + 12px + 8px + env(safe-area-inset-bottom, 8px));
+  --tabbar-total: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom, 0px));
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000000;
-    --bg-elevated: rgba(28,28,30,0.78);
-    --glass-chrome: rgba(20,20,22,0.6);
+    --bg: #060608;
+    --bg-elevated: rgba(30,29,38,0.78);
+    --glass-chrome: rgba(18,17,23,0.65);
     --glass-border: rgba(255,255,255,0.09);
     --glass-highlight: rgba(255,255,255,0.14);
     --text: #F5F5F7;
-    --text-secondary: #98989D;
-    --separator: rgba(84,84,88,0.5);
-    --accent: #0A84FF;
+    --text-secondary: #9A98A8;
+    --separator: rgba(120,118,135,0.22);
+    --accent: #7B7FFF;
+    --accent-rgb: 123,127,255;
     --accent-2: #30D158;
+    --teal: #2DE6C9;
+    --teal-rgb: 45,230,201;
+    --amber: #FFB340;
+    --amber-rgb: 255,179,64;
     --danger: #FF453A;
     --card-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.35);
   }
@@ -53,6 +63,29 @@ body {
   overflow: hidden;
 }
 
+body::before, body::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(70px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+body::before {
+  width: 300px; height: 300px;
+  top: -80px; left: -60px;
+  background: rgba(var(--accent-rgb), 0.35);
+}
+body::after {
+  width: 320px; height: 320px;
+  bottom: 10%; right: -100px;
+  background: rgba(var(--teal-rgb), 0.28);
+}
+@media (prefers-color-scheme: light) {
+  body::before, body::after { opacity: 0.22; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
@@ -61,6 +94,8 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .view {
@@ -243,7 +278,7 @@ body {
   background: var(--accent);
   color: #fff;
   border: none;
-  box-shadow: 0 8px 20px rgba(0,122,255,0.35);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb),0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +290,6 @@ body {
 
 .tabbar-wrap {
   flex: 0 0 auto;
-  padding: 0 16px calc(env(safe-area-inset-bottom, 8px) + 8px);
   position: relative;
   z-index: 20;
 }
@@ -264,10 +298,8 @@ body {
   background: var(--glass-chrome);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 0.5px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-  padding: 6px;
+  border-top: 0.5px solid var(--glass-border);
+  padding: 6px 10px calc(env(safe-area-inset-bottom, 0px) + 6px);
   gap: 4px;
 }
 .tab-btn {
@@ -278,17 +310,17 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   padding: 7px 0;
   color: var(--text-secondary);
   height: var(--tabbar-h);
-  border-radius: 18px;
+  border-radius: 16px;
   font-family: inherit;
   transition: background-color .2s ease, color .2s ease;
 }
 .tab-btn svg { width: 23px; height: 23px; }
 .tab-btn span { font-size: 10px; font-weight: 600; }
-.tab-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.tab-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 
 /* ---------- Lists grid ---------- */
 .lists-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
@@ -485,7 +517,10 @@ body {
 }
 
 /* ---------- Overview ---------- */
-.hero-card { padding: 20px; }
+.hero-card {
+  padding: 20px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--bg-elevated)), color-mix(in srgb, var(--teal) 14%, var(--bg-elevated)));
+}
 .hero-amount-row { display: flex; align-items: baseline; gap: 10px; margin-top: 2px; }
 .hero-amount-row .summary-amount { font-size: 36px; }
 .delta-badge {
@@ -497,7 +532,7 @@ body {
 .delta-badge.up { background: rgba(255,59,48,0.14); color: var(--danger); }
 .delta-badge.down { background: rgba(52,199,89,0.14); color: var(--accent-2); }
 .hero-sub { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
-.budget-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.budget-row:not([hidden]) { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
 
 .quick-actions { display: flex; gap: 10px; margin-bottom: 20px; }
 .quick-btn {

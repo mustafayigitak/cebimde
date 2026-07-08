@@ -11,7 +11,7 @@
     { id: "eglence", name: "Eğlence", icon: "🎬", color: "#AF52DE" },
     { id: "saglik", name: "Sağlık", icon: "💊", color: "#32ADE6" },
     { id: "giyim", name: "Giyim", icon: "👕", color: "#FF2D55" },
-    { id: "abonelik", name: "Abonelik", icon: "↻", color: "#5E5CE6" },
+    { id: "abonelik", name: "Abonelik", icon: "↻", color: "#00BFA6" },
     { id: "diger", name: "Diğer", icon: "📦", color: "#8E8E93" },
   ];
   const LIST_ICONS = ["📋", "✅", "🛒", "📚", "🏋️", "🎁", "🧳", "🎯", "🏠", "💼", "🍽️", "🎓"];
