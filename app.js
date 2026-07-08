@@ -85,7 +85,8 @@
     if (!s.expenses) s.expenses = [];
     if (!s.lists) s.lists = [];
     if (!s.subscriptions) s.subscriptions = [];
-    if (!s.settings) s.settings = { budget: null };
+    if (!s.settings) s.settings = { budget: null, theme: "system" };
+    if (!s.settings.theme) s.settings.theme = "system";
     return s;
   }
   function saveState() {
@@ -524,15 +525,21 @@
         renderExpenses();
         renderOverview();
       }
+      return;
+    }
+    const row = e.target.closest("[data-id]");
+    if (row) {
+      const expense = state.expenses.find((x) => x.id === row.dataset.id);
+      if (expense) openAddExpenseSheet(expense);
     }
   });
 
-  function openAddExpenseSheet() {
-    let selectedCat = CATEGORIES[0].id;
+  function openAddExpenseSheet(existing) {
+    let selectedCat = existing ? existing.categoryId : CATEGORIES[0].id;
     const html = `
-      <div class="sheet-title">Yeni Harcama</div>
+      <div class="sheet-title">${existing ? "Harcamayı Düzenle" : "Yeni Harcama"}</div>
       <div class="field-group">
-        <input class="field-input amount-input" id="expAmount" type="number" inputmode="decimal" placeholder="₺0" step="0.01" />
+        <input class="field-input amount-input" id="expAmount" type="number" inputmode="decimal" placeholder="₺0" step="0.01" value="${existing ? existing.amount : ""}" />
       </div>
       <div class="field-group">
         <label class="field-label">Kategori</label>
@@ -542,16 +549,17 @@
       </div>
       <div class="field-group">
         <label class="field-label">Not</label>
-        <input class="field-input" id="expNote" type="text" placeholder="Örn: Migros market alışverişi" />
+        <input class="field-input" id="expNote" type="text" placeholder="Örn: Migros market alışverişi" value="${existing ? escapeHtml(existing.note || "") : ""}" />
       </div>
       <div class="field-group">
         <label class="field-label">Tarih</label>
-        <input class="field-input" id="expDate" type="date" value="${todayISO()}" />
+        <input class="field-input" id="expDate" type="date" value="${existing ? existing.date : todayISO()}" />
       </div>
       <div class="sheet-actions">
         <button class="btn btn-secondary" id="expCancel">Vazgeç</button>
         <button class="btn btn-primary" id="expSave">Kaydet</button>
       </div>
+      ${existing ? '<div class="sheet-actions" style="margin-top:10px"><button class="btn btn-danger" id="expDelete">Harcamayı Sil</button></div>' : ""}
     `;
     openSheet(html, (root) => {
       root.querySelector("#expAmount").focus();
@@ -571,7 +579,14 @@
         }
         const note = root.querySelector("#expNote").value.trim();
         const date = root.querySelector("#expDate").value || todayISO();
-        state.expenses.push({ id: uid(), amount, categoryId: selectedCat, note, date });
+        if (existing) {
+          existing.amount = amount;
+          existing.categoryId = selectedCat;
+          existing.note = note;
+          existing.date = date;
+        } else {
+          state.expenses.push({ id: uid(), amount, categoryId: selectedCat, note, date });
+        }
         saveState();
         closeSheet();
         currentMonth = new Date(date + "T00:00:00");
@@ -579,9 +594,20 @@
         renderExpenses();
         renderOverview();
       });
+      if (existing) {
+        root.querySelector("#expDelete").addEventListener("click", () => {
+          if (confirm("Bu harcamayı silmek istiyor musun?")) {
+            state.expenses = state.expenses.filter((x) => x.id !== existing.id);
+            saveState();
+            closeSheet();
+            renderExpenses();
+            renderOverview();
+          }
+        });
+      }
     });
   }
-  document.getElementById("addExpenseBtn").addEventListener("click", openAddExpenseSheet);
+  document.getElementById("addExpenseBtn").addEventListener("click", () => openAddExpenseSheet());
 
   // ===================================================================
   // LISTS
@@ -696,7 +722,7 @@
           <div class="checkbox${it.done ? " checked" : ""}" data-toggle="${it.id}">
             <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <div class="item-text">${escapeHtml(it.text)}</div>
+          <div class="item-text" data-edittext="${it.id}">${escapeHtml(it.text)}</div>
           <button class="delete-x" data-delitem="${it.id}">✕</button>
         </div>`
       )
@@ -708,6 +734,7 @@
     if (!list) return;
     const toggleId = e.target.closest("[data-toggle]");
     const delId = e.target.closest("[data-delitem]");
+    const editId = e.target.closest("[data-edittext]");
     if (toggleId) {
       const item = list.items.find((i) => i.id === toggleId.dataset.toggle);
       if (item) item.done = !item.done;
@@ -717,8 +744,38 @@
       list.items = list.items.filter((i) => i.id !== delId.dataset.delitem);
       saveState();
       renderListDetail();
+    } else if (editId) {
+      const item = list.items.find((i) => i.id === editId.dataset.edittext);
+      if (item) openEditItemSheet(item);
     }
   });
+
+  function openEditItemSheet(item) {
+    const html = `
+      <div class="sheet-title">Öğeyi Düzenle</div>
+      <div class="field-group">
+        <input class="field-input" id="editItemText" type="text" value="${escapeHtml(item.text)}" />
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" id="editItemCancel">Vazgeç</button>
+        <button class="btn btn-primary" id="editItemSave">Kaydet</button>
+      </div>
+    `;
+    openSheet(html, (root) => {
+      const input = root.querySelector("#editItemText");
+      input.focus();
+      input.select();
+      root.querySelector("#editItemCancel").addEventListener("click", closeSheet);
+      root.querySelector("#editItemSave").addEventListener("click", () => {
+        const val = input.value.trim();
+        if (!val) return;
+        item.text = val;
+        saveState();
+        closeSheet();
+        renderListDetail();
+      });
+    });
+  }
 
   document.getElementById("addItemForm").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -869,7 +926,7 @@
   }
 
   document.getElementById("ovSubsCard").addEventListener("click", () => goToTab("subscriptions"));
-  document.getElementById("qaExpense").addEventListener("click", openAddExpenseSheet);
+  document.getElementById("qaExpense").addEventListener("click", () => openAddExpenseSheet());
   document.getElementById("qaSub").addEventListener("click", openAddSubscriptionSheet);
   document.getElementById("qaList").addEventListener("click", openAddListSheet);
 
@@ -907,9 +964,11 @@
         expenses: parsed.expenses,
         lists: parsed.lists,
         subscriptions: parsed.subscriptions,
-        settings: parsed.settings || { budget: null },
+        settings: parsed.settings || { budget: null, theme: "system" },
       };
+      if (!state.settings.theme) state.settings.theme = "system";
       saveState();
+      applyTheme();
       closeSheet();
       renderOverview();
       renderExpenses();
@@ -920,9 +979,27 @@
     reader.readAsText(file);
   }
 
+  function applyTheme() {
+    const theme = state.settings.theme || "system";
+    if (theme === "system") {
+      document.documentElement.removeAttribute("data-theme");
+    } else {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  }
+
   function openSettingsSheet() {
+    const theme = state.settings.theme || "system";
     const html = `
       <div class="sheet-title">Ayarlar</div>
+      <div class="field-group">
+        <label class="field-label">Görünüm</label>
+        <div class="chip-row">
+          <button type="button" class="chip${theme === "system" ? " selected" : ""}" data-theme-opt="system">Sistem</button>
+          <button type="button" class="chip${theme === "light" ? " selected" : ""}" data-theme-opt="light">Açık</button>
+          <button type="button" class="chip${theme === "dark" ? " selected" : ""}" data-theme-opt="dark">Koyu</button>
+        </div>
+      </div>
       <div class="field-group">
         <label class="field-label">Aylık Bütçe Hedefi</label>
         <input class="field-input amount-input" id="budgetInput" type="number" inputmode="decimal" placeholder="₺0 (opsiyonel)" value="${state.settings.budget || ""}" />
@@ -945,6 +1022,14 @@
       </div>
     `;
     openSheet(html, (root) => {
+      root.querySelectorAll("[data-theme-opt]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.settings.theme = btn.dataset.themeOpt;
+          saveState();
+          applyTheme();
+          root.querySelectorAll("[data-theme-opt]").forEach((b) => b.classList.toggle("selected", b.dataset.themeOpt === state.settings.theme));
+        });
+      });
       root.querySelector("#budgetSave").addEventListener("click", () => {
         const val = parseFloat(String(root.querySelector("#budgetInput").value).replace(",", "."));
         state.settings.budget = val > 0 ? val : null;
@@ -965,7 +1050,7 @@
       });
       root.querySelector("#resetBtn").addEventListener("click", () => {
         if (confirm("Tüm harcamalar, abonelikler ve listeler silinecek. Bu işlem geri alınamaz. Emin misin?")) {
-          state = { expenses: [], lists: [], subscriptions: [], settings: { budget: null } };
+          state = { expenses: [], lists: [], subscriptions: [], settings: { budget: null, theme: state.settings.theme } };
           saveState();
           closeSheet();
           renderOverview();
@@ -980,6 +1065,7 @@
   document.getElementById("settingsBtn").addEventListener("click", openSettingsSheet);
 
   // ---------- init ----------
+  applyTheme();
   processSubscriptionRenewals();
   renderOverview();
   renderExpenses();
