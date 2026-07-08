@@ -19,6 +19,61 @@
 
 <div id="app">
 
+  <!-- ===================== OVERVIEW VIEW ===================== -->
+  <section class="view active" id="view-overview">
+    <header class="navbar">
+      <h1 id="greetingTitle">Özet</h1>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+
+        <div class="card hero-card">
+          <span class="summary-label">Bu ay harcama</span>
+          <div class="hero-amount-row">
+            <span class="summary-amount" id="ovExpenseTotal">₺0</span>
+            <span class="delta-badge" id="ovDelta"></span>
+          </div>
+          <div class="hero-sub" id="ovExpenseSub">Geçen ay ile karşılaştırma yok</div>
+        </div>
+
+        <div class="quick-actions">
+          <button class="quick-btn" id="qaExpense">
+            <span class="quick-icon" style="background:#007AFF22;color:#007AFF">₺</span>
+            <span>Harcama</span>
+          </button>
+          <button class="quick-btn" id="qaSub">
+            <span class="quick-icon" style="background:#5E5CE622;color:#5E5CE6">↻</span>
+            <span>Abonelik</span>
+          </button>
+          <button class="quick-btn" id="qaList">
+            <span class="quick-icon" style="background:#34C75922;color:#34C759">✓</span>
+            <span>Liste</span>
+          </button>
+        </div>
+
+        <div class="section-title">Abonelikler</div>
+        <div class="card tappable" id="ovSubsCard">
+          <div class="ov-row">
+            <div>
+              <div class="ov-row-label">Aylık toplam</div>
+              <div class="ov-row-amount" id="ovSubTotal">₺0</div>
+            </div>
+            <div class="chevron"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+          <div id="ovUpcoming" class="ov-upcoming"></div>
+        </div>
+
+        <div class="section-title">Listelerim</div>
+        <div id="ovListsPreview" class="lists-grid"></div>
+        <div class="empty-state" id="ovListsEmpty" hidden>
+          <p>Henüz liste yok.</p>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ===================== EXPENSES VIEW ===================== -->
   <section class="view" id="view-expenses">
     <header class="navbar">
@@ -47,6 +102,9 @@
         </div>
 
         <div class="section-title" id="expensesSectionTitle">Hareketler</div>
+        <div class="search-row">
+          <input type="text" id="expenseSearch" class="field-input" placeholder="Ara…" autocomplete="off" />
+        </div>
         <div id="expensesList" class="expenses-list"></div>
         <div class="empty-state" id="expensesEmpty" hidden>
           <div class="empty-emoji">🧾</div>
@@ -58,6 +116,41 @@
     </div>
 
     <button class="fab" id="addExpenseBtn" aria-label="Harcama ekle">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </section>
+
+  <!-- ===================== SUBSCRIPTIONS VIEW ===================== -->
+  <section class="view" id="view-subscriptions">
+    <header class="navbar">
+      <h1>Abonelikler</h1>
+    </header>
+
+    <div class="scroll-area">
+      <div class="content">
+        <div class="card summary-card">
+          <div class="summary-total">
+            <span class="summary-label">Aylık toplam</span>
+            <span class="summary-amount" id="subMonthlyTotal">₺0</span>
+          </div>
+          <div class="hero-sub" id="subYearlyNote"></div>
+        </div>
+
+        <div class="section-title" id="upcomingTitle" hidden>Yaklaşan Ödemeler</div>
+        <div id="upcomingList" class="expenses-list"></div>
+
+        <div class="section-title">Tüm Abonelikler</div>
+        <div id="subsList" class="expenses-list"></div>
+        <div class="empty-state" id="subsEmpty" hidden>
+          <div class="empty-emoji">📱</div>
+          <p>Henüz bir abonelik eklemedin.</p>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="addSubBtn" aria-label="Abonelik ekle">
       <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
     </button>
   </section>
@@ -121,9 +214,17 @@
 
   <!-- ===================== TAB BAR ===================== -->
   <nav class="tabbar">
-    <button class="tab-btn active" data-tab="expenses">
+    <button class="tab-btn active" data-tab="overview">
+      <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Özet</span>
+    </button>
+    <button class="tab-btn" data-tab="expenses">
       <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <span>Harcamalar</span>
+    </button>
+    <button class="tab-btn" data-tab="subscriptions">
+      <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Abonelikler</span>
     </button>
     <button class="tab-btn" data-tab="lists">
       <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6.5l1 1 2-2M4 12.5l1 1 2-2M4 18.5l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -136,6 +237,9 @@
 <div class="sheet-overlay" id="sheetOverlay">
   <div class="sheet" id="sheet"></div>
 </div>
+
+<!-- ===================== TOAST ===================== -->
+<div class="toast" id="toast"></div>
 
 <script src="app.js"></script>
 </body>
