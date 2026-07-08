@@ -85,6 +85,7 @@
     if (!s.expenses) s.expenses = [];
     if (!s.lists) s.lists = [];
     if (!s.subscriptions) s.subscriptions = [];
+    if (!s.settings) s.settings = { budget: null };
     return s;
   }
   function saveState() {
@@ -139,19 +140,16 @@
     subscriptions: renderSubscriptions,
     lists: renderLists,
   };
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      showView(btn.dataset.tab);
-      renderers[btn.dataset.tab]();
-    });
-  });
   function goToTab(tab) {
+    const alreadyThere = views[tab].classList.contains("active");
     document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+    if (alreadyThere) return;
     showView(tab);
     renderers[tab]();
   }
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => goToTab(btn.dataset.tab));
+  });
 
   // ===================================================================
   // SUBSCRIPTIONS
@@ -210,7 +208,7 @@
           const days = Math.round((date - startOfToday()) / 86400000);
           const label = days === 0 ? "Bugün" : days === 1 ? "Yarın" : `${formatDateShort(date)}`;
           return `<div class="sub-row" data-sub="${sub.id}">
-            <div class="sub-avatar" style="background:${sub.color}">${sub.name.charAt(0).toUpperCase()}</div>
+            <div class="sub-avatar" style="background:${sub.color}">${escapeHtml(sub.name.charAt(0).toUpperCase())}</div>
             <div class="sub-info">
               <div class="sub-name">${escapeHtml(sub.name)}</div>
               <div class="sub-meta">${label}</div>
@@ -233,7 +231,7 @@
         .map((sub) => {
           const date = nextBillingDate(sub);
           return `<div class="sub-row${sub.active ? "" : " paused"}" data-sub="${sub.id}">
-            <div class="sub-avatar" style="background:${sub.color}">${sub.name.charAt(0).toUpperCase()}</div>
+            <div class="sub-avatar" style="background:${sub.color}">${escapeHtml(sub.name.charAt(0).toUpperCase())}</div>
             <div class="sub-info">
               <div class="sub-name">${escapeHtml(sub.name)}</div>
               <div class="sub-meta">${sub.active ? `Sıradaki ödeme: ${formatDateShort(date)}` : "Duraklatıldı"}</div>
@@ -618,6 +616,7 @@
     const card = e.target.closest("[data-list]");
     if (card) {
       currentListId = card.dataset.list;
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "lists"));
       showView("list-detail");
       renderListDetail();
     }
@@ -665,6 +664,7 @@
         renderLists();
         renderOverview();
         currentListId = newList.id;
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "lists"));
         showView("list-detail");
         renderListDetail();
       });
@@ -823,6 +823,19 @@
       subEl.textContent = "Geçen ay ile karşılaştırma yok";
     }
 
+    const budgetRow = document.getElementById("budgetRow");
+    const budget = state.settings.budget;
+    if (budget && budget > 0) {
+      budgetRow.hidden = false;
+      const pct = Math.min(100, Math.round((thisTotal / budget) * 100));
+      const fillEl = document.getElementById("budgetFill");
+      fillEl.style.width = pct + "%";
+      fillEl.style.background = pct >= 100 ? "var(--danger)" : pct >= 80 ? "#FF9500" : "var(--accent-2)";
+      document.getElementById("budgetText").textContent = `%${pct} · ${formatCurrency(budget)} bütçe`;
+    } else {
+      budgetRow.hidden = true;
+    }
+
     const active = state.subscriptions.filter((s) => s.active);
     const monthlyTotal = active.reduce((sum, s) => sum + monthlyEquivalent(s), 0);
     document.getElementById("ovSubTotal").textContent = formatCurrency(monthlyTotal);
@@ -837,7 +850,7 @@
         const days = Math.round((date - startOfToday()) / 86400000);
         const label = days === 0 ? "Bugün" : days === 1 ? "Yarın" : days < 0 ? formatDateShort(date) : `${formatDateShort(date)}`;
         return `<div class="ov-upcoming-row">
-          <div class="sub-avatar" style="background:${sub.color}">${sub.name.charAt(0).toUpperCase()}</div>
+          <div class="sub-avatar" style="background:${sub.color}">${escapeHtml(sub.name.charAt(0).toUpperCase())}</div>
           <div class="ov-upcoming-name">${escapeHtml(sub.name)}</div>
           <div class="ov-upcoming-date">${label}</div>
         </div>`;
@@ -859,6 +872,112 @@
   document.getElementById("qaExpense").addEventListener("click", openAddExpenseSheet);
   document.getElementById("qaSub").addEventListener("click", openAddSubscriptionSheet);
   document.getElementById("qaList").addEventListener("click", openAddListSheet);
+
+  // ===================================================================
+  // SETTINGS (budget goal + backup/restore)
+  // ===================================================================
+  function exportData() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cebimde-yedek-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  function importDataFromFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(reader.result);
+      } catch (e) {
+        showToast("Dosya okunamadı, geçerli bir yedek değil");
+        return;
+      }
+      if (!parsed || !Array.isArray(parsed.expenses) || !Array.isArray(parsed.lists) || !Array.isArray(parsed.subscriptions)) {
+        showToast("Dosya formatı tanınmadı");
+        return;
+      }
+      if (!confirm("Mevcut tüm verilerin yerine bu yedek yüklenecek. Emin misin?")) return;
+      state = {
+        expenses: parsed.expenses,
+        lists: parsed.lists,
+        subscriptions: parsed.subscriptions,
+        settings: parsed.settings || { budget: null },
+      };
+      saveState();
+      closeSheet();
+      renderOverview();
+      renderExpenses();
+      renderSubscriptions();
+      renderLists();
+      showToast("Veriler geri yüklendi");
+    };
+    reader.readAsText(file);
+  }
+
+  function openSettingsSheet() {
+    const html = `
+      <div class="sheet-title">Ayarlar</div>
+      <div class="field-group">
+        <label class="field-label">Aylık Bütçe Hedefi</label>
+        <input class="field-input amount-input" id="budgetInput" type="number" inputmode="decimal" placeholder="₺0 (opsiyonel)" value="${state.settings.budget || ""}" />
+      </div>
+      <div class="sheet-actions">
+        <button class="btn btn-secondary" id="budgetClear">Temizle</button>
+        <button class="btn btn-primary" id="budgetSave">Kaydet</button>
+      </div>
+      <div class="settings-group" style="margin-top:22px">
+        <button class="settings-row as-button" id="exportBtn">
+          <div><div class="settings-label">Verileri Dışa Aktar</div><div class="settings-sub">JSON yedek dosyası indir</div></div>
+        </button>
+        <button class="settings-row as-button" id="importBtn">
+          <div><div class="settings-label">Verileri İçe Aktar</div><div class="settings-sub">Yedek dosyasından geri yükle</div></div>
+        </button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button class="settings-row as-button danger" id="resetBtn">
+          <div><div class="settings-label">Tüm Verileri Sıfırla</div><div class="settings-sub">Bu işlem geri alınamaz</div></div>
+        </button>
+      </div>
+    `;
+    openSheet(html, (root) => {
+      root.querySelector("#budgetSave").addEventListener("click", () => {
+        const val = parseFloat(String(root.querySelector("#budgetInput").value).replace(",", "."));
+        state.settings.budget = val > 0 ? val : null;
+        saveState();
+        closeSheet();
+        renderOverview();
+      });
+      root.querySelector("#budgetClear").addEventListener("click", () => {
+        state.settings.budget = null;
+        saveState();
+        closeSheet();
+        renderOverview();
+      });
+      root.querySelector("#exportBtn").addEventListener("click", exportData);
+      root.querySelector("#importBtn").addEventListener("click", () => root.querySelector("#importFile").click());
+      root.querySelector("#importFile").addEventListener("change", (e) => {
+        if (e.target.files[0]) importDataFromFile(e.target.files[0]);
+      });
+      root.querySelector("#resetBtn").addEventListener("click", () => {
+        if (confirm("Tüm harcamalar, abonelikler ve listeler silinecek. Bu işlem geri alınamaz. Emin misin?")) {
+          state = { expenses: [], lists: [], subscriptions: [], settings: { budget: null } };
+          saveState();
+          closeSheet();
+          renderOverview();
+          renderExpenses();
+          renderSubscriptions();
+          renderLists();
+          showToast("Tüm veriler sıfırlandı");
+        }
+      });
+    });
+  }
+  document.getElementById("settingsBtn").addEventListener("click", openSettingsSheet);
 
   // ---------- init ----------
   processSubscriptionRenewals();

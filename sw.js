@@ -1,4 +1,4 @@
-const CACHE_NAME = "cebimde-v2";
+const CACHE_NAME = "cebimde-v3";
 const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {

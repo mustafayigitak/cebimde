@@ -2,14 +2,15 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
 <title>Cebimde</title>
 
 <!-- iOS PWA meta -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Cebimde" />
-<meta name="theme-color" content="#0B0B0F" />
+<meta name="theme-color" content="#000000" />
 <meta name="mobile-web-app-capable" content="yes" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
 <link rel="manifest" href="manifest.json" />
@@ -21,8 +22,11 @@
 
   <!-- ===================== OVERVIEW VIEW ===================== -->
   <section class="view active" id="view-overview">
-    <header class="navbar">
+    <header class="navbar navbar-detail">
       <h1 id="greetingTitle">Özet</h1>
+      <button class="icon-btn" id="settingsBtn" aria-label="Ayarlar">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.7 1.7 0 000-3l1-1.7-1.7-1.7-1.7 1a1.7 1.7 0 00-3-1.1L13.5 5h-3l-.5 1.9a1.7 1.7 0 00-3 1l-1.7-1L3.6 8.7l1 1.7a1.7 1.7 0 000 3l-1 1.7 1.7 1.7 1.7-1a1.7 1.7 0 003 1.1l.5 1.9h3l.5-1.9a1.7 1.7 0 003-1l1.7 1 1.7-1.7-1-1.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </button>
     </header>
     <div class="scroll-area">
       <div class="content">
@@ -34,6 +38,10 @@
             <span class="delta-badge" id="ovDelta"></span>
           </div>
           <div class="hero-sub" id="ovExpenseSub">Geçen ay ile karşılaştırma yok</div>
+          <div class="budget-row" id="budgetRow" hidden>
+            <div class="progress-track"><div class="progress-fill" id="budgetFill"></div></div>
+            <span class="progress-text" id="budgetText"></span>
+          </div>
         </div>
 
         <div class="quick-actions">
@@ -213,24 +221,26 @@
   </section>
 
   <!-- ===================== TAB BAR ===================== -->
-  <nav class="tabbar">
-    <button class="tab-btn active" data-tab="overview">
-      <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Özet</span>
-    </button>
-    <button class="tab-btn" data-tab="expenses">
-      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <span>Harcamalar</span>
-    </button>
-    <button class="tab-btn" data-tab="subscriptions">
-      <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Abonelikler</span>
-    </button>
-    <button class="tab-btn" data-tab="lists">
-      <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6.5l1 1 2-2M4 12.5l1 1 2-2M4 18.5l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Listelerim</span>
-    </button>
-  </nav>
+  <div class="tabbar-wrap">
+    <nav class="tabbar">
+      <button class="tab-btn active" data-tab="overview">
+        <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Özet</span>
+      </button>
+      <button class="tab-btn" data-tab="expenses">
+        <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Harcamalar</span>
+      </button>
+      <button class="tab-btn" data-tab="subscriptions">
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Abonelikler</span>
+      </button>
+      <button class="tab-btn" data-tab="lists">
+        <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6.5l1 1 2-2M4 12.5l1 1 2-2M4 18.5l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Listelerim</span>
+      </button>
+    </nav>
+  </div>
 </div>
 
 <!-- ===================== SHEET (modal) ===================== -->
