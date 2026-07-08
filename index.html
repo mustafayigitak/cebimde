@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Cebimde</title>
+
+<!-- iOS PWA meta -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Cebimde" />
+<meta name="theme-color" content="#0B0B0F" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===================== EXPENSES VIEW ===================== -->
+  <section class="view" id="view-expenses">
+    <header class="navbar">
+      <h1>Harcamalar</h1>
+    </header>
+
+    <div class="scroll-area">
+      <div class="content">
+
+        <div class="month-switch">
+          <button class="icon-btn" id="prevMonth" aria-label="Önceki ay">
+            <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="month-label" id="monthLabel">Temmuz 2026</div>
+          <button class="icon-btn" id="nextMonth" aria-label="Sonraki ay">
+            <svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="card summary-card">
+          <div class="summary-total">
+            <span class="summary-label">Bu ay toplam</span>
+            <span class="summary-amount" id="monthTotal">₺0</span>
+          </div>
+          <div class="cat-bars" id="catBars"></div>
+        </div>
+
+        <div class="section-title" id="expensesSectionTitle">Hareketler</div>
+        <div id="expensesList" class="expenses-list"></div>
+        <div class="empty-state" id="expensesEmpty" hidden>
+          <div class="empty-emoji">🧾</div>
+          <p>Bu ay henüz bir harcama eklemedin.</p>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="addExpenseBtn" aria-label="Harcama ekle">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </section>
+
+  <!-- ===================== LISTS VIEW ===================== -->
+  <section class="view" id="view-lists">
+    <header class="navbar">
+      <h1>Listelerim</h1>
+    </header>
+
+    <div class="scroll-area">
+      <div class="content">
+        <div id="listsGrid" class="lists-grid"></div>
+        <div class="empty-state" id="listsEmpty" hidden>
+          <div class="empty-emoji">📋</div>
+          <p>Henüz bir listen yok. Aşağıdan yeni bir liste oluştur.</p>
+        </div>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+
+    <button class="fab" id="addListBtn" aria-label="Liste ekle">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </section>
+
+  <!-- ===================== LIST DETAIL VIEW ===================== -->
+  <section class="view" id="view-list-detail">
+    <header class="navbar navbar-detail">
+      <button class="back-btn" id="backToLists" aria-label="Geri">
+        <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Listeler</span>
+      </button>
+      <button class="icon-btn" id="listMenuBtn" aria-label="Liste seçenekleri">
+        <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg>
+      </button>
+    </header>
+
+    <div class="scroll-area">
+      <div class="content">
+        <h2 class="detail-title" id="detailListName">Liste</h2>
+        <div class="progress-row">
+          <div class="progress-track"><div class="progress-fill" id="detailProgressFill"></div></div>
+          <span class="progress-text" id="detailProgressText">0/0</span>
+        </div>
+
+        <div id="detailItems" class="items-list"></div>
+
+        <form id="addItemForm" class="add-item-row">
+          <input type="text" id="addItemInput" placeholder="Yeni öğe ekle…" autocomplete="off" />
+          <button type="submit" class="add-item-btn" aria-label="Ekle">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </button>
+        </form>
+
+        <button class="text-btn danger" id="clearCheckedBtn">Tamamlananları temizle</button>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB BAR ===================== -->
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="expenses">
+      <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h13a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 12h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Harcamalar</span>
+    </button>
+    <button class="tab-btn" data-tab="lists">
+      <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M4 6.5l1 1 2-2M4 12.5l1 1 2-2M4 18.5l1 1 2-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Listelerim</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ===================== SHEET (modal) ===================== -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
