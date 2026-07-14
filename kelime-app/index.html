@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';" />
+<title>Kelimem</title>
+
+<!-- iOS PWA meta -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Kelimem" />
+<meta name="theme-color" content="#000000" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===================== HOME VIEW ===================== -->
+  <section class="view active" id="view-home">
+    <header class="navbar navbar-detail">
+      <h1 id="greetingTitle">Merhaba</h1>
+      <div class="navbar-actions">
+        <button class="icon-btn" id="searchBtn" aria-label="Kelime Ara">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4.3-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" id="settingsBtn" aria-label="Ayarlar">
+          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13.5a1.7 1.7 0 000-3l1-1.7-1.7-1.7-1.7 1a1.7 1.7 0 00-3-1.1L13.5 5h-3l-.5 1.9a1.7 1.7 0 00-3 1l-1.7-1L3.6 8.7l1 1.7a1.7 1.7 0 000 3l-1 1.7 1.7 1.7 1.7-1a1.7 1.7 0 003 1.1l.5 1.9h3l.5-1.9a1.7 1.7 0 003-1l1.7 1 1.7-1.7-1-1.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+
+        <div class="card hero-card">
+          <div class="hero-top-row">
+            <div>
+              <span class="summary-label">Bugün tekrar edilecek</span>
+              <div class="hero-amount-row">
+                <span class="summary-amount" id="hDueCount">0</span>
+                <span class="delta-badge streak-badge" id="hStreak">🔥 0</span>
+              </div>
+              <div class="hero-sub" id="hDueSub">Harika, bugün tekrar yok</div>
+            </div>
+          </div>
+          <button class="cta-btn" id="hReviewBtn">Tekrara Başla</button>
+        </div>
+
+        <div class="section-title">Genel İlerleme</div>
+        <div class="card">
+          <div class="ov-row">
+            <div>
+              <div class="ov-row-label">Öğrenilen kelime</div>
+              <div class="ov-row-amount" id="hLearnedTotal">0 / 0</div>
+            </div>
+          </div>
+          <div class="progress-row">
+            <div class="progress-track"><div class="progress-fill" id="hLearnedFill"></div></div>
+          </div>
+        </div>
+
+        <div class="section-title">Seviyeler</div>
+        <div class="level-mini-grid" id="hLevelGrid"></div>
+
+        <div class="section-title">Hızlı Erişim</div>
+        <div class="quick-actions">
+          <button class="quick-btn" id="qaStudy">
+            <span class="quick-icon" style="background:#5B5FEF26;color:#5B5FEF">📖</span>
+            <span>Öğren</span>
+          </button>
+          <button class="quick-btn" id="qaTest">
+            <span class="quick-icon" style="background:#00BFA626;color:#00BFA6">✓</span>
+            <span>Test</span>
+          </button>
+          <button class="quick-btn" id="qaMixed">
+            <span class="quick-icon" style="background:#FF9F0A26;color:#FF9F0A">🔀</span>
+            <span>Karışık</span>
+          </button>
+        </div>
+
+        <div class="card tappable" id="hWrongCard">
+          <div class="ov-row">
+            <div>
+              <div class="ov-row-label">Yanlış Bilinen Kelimeler</div>
+              <div class="ov-row-amount" id="hWrongCount">0 kelime</div>
+            </div>
+            <div class="chevron"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SEARCH VIEW ===================== -->
+  <section class="view" id="view-search">
+    <header class="navbar navbar-detail">
+      <button class="back-btn" id="backFromSearch" aria-label="Geri">
+        <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Geri</span>
+      </button>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+        <div class="search-row">
+          <input type="text" id="searchInput" class="field-input" placeholder="İngilizce veya Türkçe kelime ara…" autocomplete="off" autocorrect="off" spellcheck="false" />
+        </div>
+        <div id="searchResults" class="items-list"></div>
+        <div class="empty-state" id="searchEmpty" hidden>
+          <div class="empty-emoji">🔍</div>
+          <p>Sonuç bulunamadı.</p>
+        </div>
+        <div class="empty-state" id="searchHint">
+          <div class="empty-emoji">📚</div>
+          <p>5000+ kelime arasında ara.</p>
+        </div>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STUDY LEVELS VIEW ===================== -->
+  <section class="view" id="view-study-levels">
+    <header class="navbar">
+      <h1>Öğren</h1>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+        <p class="hint-text">Bir seviye seç. Kelimeler anlamlarıyla birlikte gösterilir.</p>
+        <div class="level-grid" id="studyLevelGrid"></div>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TEST LEVELS VIEW ===================== -->
+  <section class="view" id="view-test-levels">
+    <header class="navbar">
+      <h1>Test</h1>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+        <p class="hint-text">Bir seviye seç. Kelimenin doğru anlamını 4 seçenek arasından bul.</p>
+        <div class="level-grid" id="testLevelGrid"></div>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REVIEW VIEW ===================== -->
+  <section class="view" id="view-review">
+    <header class="navbar">
+      <h1>Tekrar</h1>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+
+        <div class="section-title" id="dueTitle">Bugün Tekrarlanacaklar</div>
+        <div class="card tappable" id="dueCard">
+          <div class="ov-row">
+            <div>
+              <div class="ov-row-label">Zamanı gelen kelimeler</div>
+              <div class="ov-row-amount" id="dueCardCount">0 kelime</div>
+            </div>
+            <div class="chevron"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          </div>
+        </div>
+
+        <div class="section-title">Yanlış Bilinenler</div>
+        <div class="row-between">
+          <span class="hint-text" id="wrongHint">Bu kelimeleri "biliyorum" diyerek listeden çıkarabilir ya da test ederek çözebilirsin.</span>
+        </div>
+        <button class="text-btn" id="wrongTestAllBtn" hidden>Tümünü Test Et</button>
+        <div id="wrongList" class="items-list"></div>
+        <div class="empty-state" id="wrongEmpty" hidden>
+          <div class="empty-emoji">🎉</div>
+          <p>Yanlış bilinen kelime yok.</p>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DIRECTION SELECT VIEW ===================== -->
+  <section class="view" id="view-direction">
+    <header class="navbar navbar-detail">
+      <button class="back-btn" id="backFromDirection" aria-label="Geri">
+        <svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Geri</span>
+      </button>
+    </header>
+    <div class="scroll-area">
+      <div class="content">
+        <h2 class="detail-title" id="directionTitle">Yön Seç</h2>
+        <div class="direction-grid">
+          <button class="direction-card" id="dirEnTr">
+            <span class="direction-flag">EN → TR</span>
+            <span class="direction-desc">İngilizce kelimeyi gör, Türkçesini öğren</span>
+          </button>
+          <button class="direction-card" id="dirTrEn">
+            <span class="direction-flag">TR → EN</span>
+            <span class="direction-desc">Türkçe kelimeyi gör, İngilizcesini öğren</span>
+          </button>
+        </div>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SESSION VIEW (study + test + review) ===================== -->
+  <section class="view" id="view-session">
+    <header class="navbar navbar-detail">
+      <button class="back-btn" id="backFromSession" aria-label="Kapat">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="session-progress-text" id="sessionProgressText">1 / 20</span>
+    </header>
+    <div class="progress-track session-progress-track"><div class="progress-fill" id="sessionProgressFill"></div></div>
+
+    <div class="scroll-area">
+      <div class="content session-content">
+
+        <div class="word-card" id="wordCard">
+          <button class="speak-btn" id="speakBtn" aria-label="Telaffuz dinle">
+            <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 5V4L8 9H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+          <span class="word-pos" id="wordPos"></span>
+          <div class="word-main" id="wordMain">word</div>
+
+          <!-- study-only meaning block -->
+          <div class="word-meaning-block" id="wordMeaningBlock" hidden>
+            <div class="word-meaning" id="wordMeaning">anlam</div>
+            <div class="word-example" id="wordExample"></div>
+          </div>
+        </div>
+
+        <!-- test-only options -->
+        <div class="options-grid" id="optionsGrid" hidden></div>
+
+        <!-- study-only action buttons -->
+        <div class="study-actions" id="studyActions" hidden>
+          <button class="know-btn no" id="btnDontKnow">
+            <span>✕</span> Bilmiyorum
+          </button>
+          <button class="know-btn yes" id="btnKnow">
+            <span>✓</span> Biliyorum
+          </button>
+        </div>
+
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SESSION END VIEW ===================== -->
+  <section class="view" id="view-session-end">
+    <div class="scroll-area">
+      <div class="content session-end-content">
+        <div class="end-emoji" id="endEmoji">🎉</div>
+        <h2 class="end-title" id="endTitle">Tamamlandı!</h2>
+        <p class="end-sub" id="endSub"></p>
+
+        <div class="end-stats-row">
+          <div class="end-stat">
+            <span class="end-stat-num" id="endKnowCount">0</span>
+            <span class="end-stat-label">Biliyorum</span>
+          </div>
+          <div class="end-stat">
+            <span class="end-stat-num" id="endDontKnowCount">0</span>
+            <span class="end-stat-label">Bilmiyorum</span>
+          </div>
+        </div>
+
+        <button class="cta-btn" id="endRetryBtn">Yanlışları Tekrar Et</button>
+        <button class="text-btn" id="endHomeBtn">Ana Menüye Dön</button>
+        <div class="bottom-spacer"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB BAR ===================== -->
+  <div class="tabbar-wrap">
+    <nav class="tabbar">
+      <button class="tab-btn active" data-tab="home">
+        <svg viewBox="0 0 24 24"><path d="M4 11.5L12 4l8 7.5M6 10v9a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Ana Sayfa</span>
+      </button>
+      <button class="tab-btn" data-tab="study-levels">
+        <svg viewBox="0 0 24 24"><path d="M4 5.5c2-1 5-1 8 .5v13c-3-1.5-6-1.5-8-.5v-13zM20 5.5c-2-1-5-1-8 .5v13c3-1.5 6-1.5 8-.5v-13z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <span>Öğren</span>
+      </button>
+      <button class="tab-btn" data-tab="test-levels">
+        <svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Test</span>
+      </button>
+      <button class="tab-btn" data-tab="review">
+        <svg viewBox="0 0 24 24"><path d="M12 5a7 7 0 105.2 2.3M12 2v4l3-1.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Tekrar</span>
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- ===================== SHEET (modal) ===================== -->
+<div class="sheet-overlay" id="sheetOverlay">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<!-- ===================== TOAST ===================== -->
+<div class="toast" id="toast"></div>
+
+<script src="data/a1.js"></script>
+<script src="data/a2.js"></script>
+<script src="data/b1.js"></script>
+<script src="data/b2.js"></script>
+<script src="data/c1.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
