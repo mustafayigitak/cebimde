@@ -1,4 +1,4 @@
-const CACHE_NAME = "kelimem-v2";
+const CACHE_NAME = "kelimem-v3";
 const ASSETS = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json",
   "./data/a1.js", "./data/a2.js", "./data/b1.js", "./data/b2.js", "./data/c1.js"

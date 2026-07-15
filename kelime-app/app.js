@@ -49,8 +49,24 @@
     return t.split(",")[0].split("/")[0].trim();
   }
   function posLabel(p) { return POS_LABELS[p] || ""; }
-  function wordObj(level, idx) { return getLevelData(level)[idx]; }
   function levelMeta(id) { return LEVELS.find((l) => l.id === id) || MIXED_LEVEL; }
+
+  // Word identity for progress tracking must be stable across word-list edits/reorders,
+  // so we key by the word's own text rather than its array index (indices shift whenever
+  // the list is re-sorted or new entries are inserted, silently corrupting old progress).
+  const WORD_INDEX = {};
+  function buildWordIndex() {
+    LEVELS.forEach((l) => {
+      const map = new Map();
+      getLevelData(l.id).forEach((w) => { if (!map.has(w.w)) map.set(w.w, w); });
+      WORD_INDEX[l.id] = map;
+    });
+  }
+  function wordByText(level, word) {
+    const map = WORD_INDEX[level];
+    return map ? map.get(word) : undefined;
+  }
+  function makeKey(level, word, dir) { return `${level}::${word}|${dir}`; }
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
@@ -66,6 +82,16 @@
       s = {};
     }
     if (!s.progress) s.progress = {};
+    // One-time migration: progress used to be keyed by array index ("b2_47|en_tr"),
+    // which breaks silently whenever the word list is reordered or extended (index 47
+    // now points at a different word). Keys are now word-text based ("b2::advocate|en_tr").
+    // Legacy index-based entries can no longer be trusted to refer to the right word, so
+    // they're dropped rather than migrated.
+    const cleanProgress = {};
+    for (const k in s.progress) {
+      if (/\|(en_tr|tr_en)$/.test(k) && k.indexOf("::") !== -1) cleanProgress[k] = s.progress[k];
+    }
+    s.progress = cleanProgress;
     if (!s.streak) s.streak = { count: 0, last: null };
     if (!s.settings) s.settings = { theme: "system", tts: true };
     if (s.settings.tts === undefined) s.settings.tts = true;
@@ -77,14 +103,14 @@
 
   function parseKey(key) {
     const [wordPart, dir] = key.split("|");
-    const us = wordPart.lastIndexOf("_");
-    const level = wordPart.slice(0, us);
-    const idx = Number(wordPart.slice(us + 1));
-    return { level, idx, dir };
+    const sep = wordPart.indexOf("::");
+    const level = wordPart.slice(0, sep);
+    const word = wordPart.slice(sep + 2);
+    return { level, word, dir };
   }
 
-  function updateProgress(level, idx, dir, correct) {
-    const key = `${level}_${idx}|${dir}`;
+  function updateProgress(level, word, dir, correct) {
+    const key = makeKey(level, word, dir);
     const p = state.progress[key] || { box: -1, due: todayISO(), wrong: false };
     if (correct) {
       p.box = Math.min(p.box + 1, INTERVALS.length - 1);
@@ -121,9 +147,8 @@
     const data = getLevelData(levelId);
     let n = 0;
     for (let i = 0; i < data.length; i++) {
-      const base = `${levelId}_${i}`;
-      const e1 = state.progress[base + "|en_tr"];
-      const e2 = state.progress[base + "|tr_en"];
+      const e1 = state.progress[makeKey(levelId, data[i].w, "en_tr")];
+      const e2 = state.progress[makeKey(levelId, data[i].w, "tr_en")];
       if ((e1 && !e1.wrong) || (e2 && !e2.wrong)) n++;
     }
     return n;
@@ -146,20 +171,18 @@
     if (levelId === "mixed") {
       let pool = [];
       LEVELS.forEach((l) => {
-        const data = getLevelData(l.id);
-        for (let i = 0; i < data.length; i++) pool.push({ level: l.id, idx: i });
+        getLevelData(l.id).forEach((w) => pool.push({ level: l.id, word: w.w }));
       });
       return pool;
     }
-    const data = getLevelData(levelId);
-    return data.map((_, i) => ({ level: levelId, idx: i }));
+    return getLevelData(levelId).map((w) => ({ level: levelId, word: w.w }));
   }
 
   function sessionPool(levelId, dir) {
     const pool = buildPool(levelId);
     const t = todayISO();
     let filtered = pool.filter((item) => {
-      const key = `${item.level}_${item.idx}|${dir}`;
+      const key = makeKey(item.level, item.word, dir);
       const p = state.progress[key];
       if (!p) return true;
       if (p.wrong) return false;
@@ -178,7 +201,7 @@
       const shuffled = shuffle(pool);
       for (const c of shuffled) {
         if (options.length >= 4) break;
-        const w = wordObj(c.level, c.idx);
+        const w = wordByText(c.level, c.word);
         if (!w) continue;
         const text = dir === "en_tr" ? primaryMeaning(w.t) : w.w;
         if (!texts.has(text)) {
@@ -428,7 +451,7 @@
   function startFlowSession() {
     const pool = sessionPool(flow.level, flow.direction);
     if (pool.length === 0) { showToast("Bu seviyede kelime bulunamadı"); return; }
-    const items = pool.map((p) => ({ level: p.level, idx: p.idx, dir: flow.direction }));
+    const items = pool.map((p) => ({ level: p.level, word: p.word, dir: flow.direction }));
     session.contextPool = buildPool(flow.level);
     beginSession(items, flow.mode);
   }
@@ -467,7 +490,7 @@
 
   function renderSessionItem() {
     const it = currentItem();
-    const w = wordObj(it.level, it.idx);
+    const w = wordByText(it.level, it.word);
     sessionProgressText.textContent = `${session.pointer + 1} / ${session.items.length}`;
     sessionProgressFill.style.width = `${(session.pointer / session.items.length) * 100}%`;
 
@@ -505,9 +528,9 @@
   document.getElementById("btnDontKnow").addEventListener("click", () => handleStudyAnswer(false));
   function handleStudyAnswer(known) {
     const it = currentItem();
-    updateProgress(it.level, it.idx, it.dir, known);
+    updateProgress(it.level, it.word, it.dir, known);
     if (known) session.know++;
-    else { session.dontKnow++; session.wrongThisSession.push({ level: it.level, idx: it.idx, dir: it.dir }); }
+    else { session.dontKnow++; session.wrongThisSession.push({ level: it.level, word: it.word, dir: it.dir }); }
     advance();
   }
 
@@ -524,9 +547,9 @@
       if (b.dataset.text === correctText) b.classList.add("correct");
       else if (b === btn) b.classList.add("wrong");
     });
-    updateProgress(it.level, it.idx, it.dir, correct);
+    updateProgress(it.level, it.word, it.dir, correct);
     if (correct) session.know++;
-    else { session.dontKnow++; session.wrongThisSession.push({ level: it.level, idx: it.idx, dir: it.dir }); }
+    else { session.dontKnow++; session.wrongThisSession.push({ level: it.level, word: it.word, dir: it.dir }); }
     setTimeout(advance, 850);
   });
 
@@ -548,7 +571,7 @@
   }
   document.getElementById("speakBtn").addEventListener("click", () => {
     const it = currentItem();
-    const w = wordObj(it.level, it.idx);
+    const w = wordByText(it.level, it.word);
     if (w) speakWord(w.w);
   });
 
@@ -595,8 +618,8 @@
     wrongTestAllBtn.hidden = false;
 
     wrongListEl.innerHTML = wrongKeys.map((key) => {
-      const { level, idx, dir } = parseKey(key);
-      const w = wordObj(level, idx);
+      const { level, word, dir } = parseKey(key);
+      const w = wordByText(level, word);
       if (!w) return "";
       const meta = levelMeta(level);
       const front = dir === "en_tr" ? w.w : primaryMeaning(w.t);
@@ -660,7 +683,7 @@
       for (let i = 0; i < data.length; i++) {
         const w = data[i];
         if (w.w.toLocaleLowerCase("tr-TR").includes(q) || w.t.toLocaleLowerCase("tr-TR").includes(q)) {
-          matches.push({ level: l.id, idx: i, w });
+          matches.push({ level: l.id, w });
           if (matches.length >= 60) break outer;
         }
       }
@@ -674,7 +697,7 @@
     resultsEl.innerHTML = matches.map((m) => {
       const meta = levelMeta(m.level);
       return `
-        <div class="item-row tappable" data-level="${m.level}" data-idx="${m.idx}">
+        <div class="item-row tappable" data-level="${m.level}" data-word="${escapeHtml(m.w.w)}">
           <span class="item-level-badge" style="background:${meta.c1}26;color:${meta.c1}">${meta.name}</span>
           <span class="item-info">
             <span class="search-result-word">${escapeHtml(m.w.w)}</span>
@@ -684,12 +707,12 @@
         </div>`;
     }).join("");
     resultsEl.querySelectorAll(".item-row").forEach((row) => {
-      row.addEventListener("click", () => openWordDetailSheet(row.dataset.level, Number(row.dataset.idx)));
+      row.addEventListener("click", () => openWordDetailSheet(row.dataset.level, row.dataset.word));
     });
   }
 
-  function openWordDetailSheet(level, idx) {
-    const w = wordObj(level, idx);
+  function openWordDetailSheet(level, word) {
+    const w = wordByText(level, word);
     if (!w) return;
     openSheet(
       `
@@ -722,6 +745,7 @@
 
   // ---------- init ----------
   applyTheme();
+  buildWordIndex();
   ALL_POOL = buildPool("mixed");
   renderLevelGrid("study");
   renderLevelGrid("test");
